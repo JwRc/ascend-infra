@@ -15,7 +15,11 @@ services:
     networks:
       - internal
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-ascend}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-ascend}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -38,7 +42,7 @@ services:
 
   backend:
     build:
-      context: ../backend
+      context: ../ascend-backend
       dockerfile: Dockerfile
     env_file: .env
     environment:
@@ -57,7 +61,7 @@ services:
 
   frontend-web:
     build:
-      context: ../frontend-web
+      context: ../ascend-frontend-web
       dockerfile: Dockerfile
       args:
         VITE_API_URL: /api
