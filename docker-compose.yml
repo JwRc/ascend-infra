@@ -44,12 +44,21 @@ services:
     build:
       context: ../ascend-backend
       dockerfile: Dockerfile
-    env_file: .env
     environment:
       NODE_ENV: production
+      PORT: "3000"
       DATABASE_URL: postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-pass}@postgres:5432/${POSTGRES_DB:-ascend}
       REDIS_URL: redis://redis:6379
-      PORT: "3000"
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      APPLE_CLIENT_ID: ${APPLE_CLIENT_ID:-}
+      APPLE_CLIENT_SECRET: ${APPLE_CLIENT_SECRET:-}
+      FCM_SERVER_KEY: ${FCM_SERVER_KEY:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@ascend.app}
+      TRUSTED_ORIGINS: ${TRUSTED_ORIGINS:-http://localhost}
     depends_on:
       postgres:
         condition: service_healthy
