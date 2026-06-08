@@ -61,7 +61,7 @@ services:
 
   frontend-web:
     build:
-      context: ../ascend-frontend-web
+      context: ../ascend-frontend
       dockerfile: Dockerfile
       args:
         VITE_API_URL: /api
