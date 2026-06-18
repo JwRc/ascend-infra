@@ -74,6 +74,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: /api
+        VITE_AUTH_URL: https://app.ascentio.com.br
     networks:
       - internal
     restart: unless-stopped
