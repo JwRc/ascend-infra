@@ -59,6 +59,11 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       EMAIL_FROM: ${EMAIL_FROM:-noreply@ascend.app}
       TRUSTED_ORIGINS: ${TRUSTED_ORIGINS:-http://localhost}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_PRICE_COACH_BASE: ${STRIPE_PRICE_COACH_BASE:-}
+      STRIPE_PRICE_COACH_EXTRA: ${STRIPE_PRICE_COACH_EXTRA:-}
+      STRIPE_PRICE_STANDALONE: ${STRIPE_PRICE_STANDALONE:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -75,6 +80,7 @@ services:
       args:
         VITE_API_URL: /api
         VITE_AUTH_URL: https://app.ascentio.com.br
+        VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY:-}
     networks:
       - internal
     restart: unless-stopped
