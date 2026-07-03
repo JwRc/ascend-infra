@@ -51,7 +51,7 @@ services:
   backend-a:
     image: ${REGISTRY}ascend-backend:${BACKEND_IMAGE_TAG:-latest}
     build:
-      context: ../backend
+      context: ../ascend-backend
       dockerfile: Dockerfile
     environment:
       NODE_ENV: production
@@ -90,7 +90,7 @@ services:
   backend-b:
     image: ${REGISTRY}ascend-backend:${BACKEND_IMAGE_TAG:-latest}
     build:
-      context: ../backend
+      context: ../ascend-backend
       dockerfile: Dockerfile
     environment:
       NODE_ENV: production
@@ -130,7 +130,7 @@ services:
   frontend-web:
     image: ${REGISTRY}ascend-frontend:${FRONTEND_IMAGE_TAG:-latest}
     build:
-      context: ../frontend-web
+      context: ../ascend-frontend
       dockerfile: Dockerfile
       args:
         VITE_API_URL: /api
@@ -146,7 +146,7 @@ services:
   frontend-web-b:
     image: ${REGISTRY}ascend-frontend:${FRONTEND_IMAGE_TAG:-latest}
     build:
-      context: ../frontend-web
+      context: ../ascend-frontend
       dockerfile: Dockerfile
       args:
         VITE_API_URL: /api
