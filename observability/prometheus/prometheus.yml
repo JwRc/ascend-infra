@@ -1,0 +1,35 @@
+global:
+  scrape_interval: 15s # How often to fetch metrics
+
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: 'ascentio-backend'
+    bearer_token: 'um-token-super-hiper-mega-secreto-que-ninguem-sabe'
+    
+    # Path where metrics are exposed (defaults to /metrics if omitted)
+    metrics_path: '/metrics' 
+    
+    # As duas réplicas do backend (backend-a e backend-b), alcançadas pelo nome
+    # do container na rede `observability`
+    static_configs:
+      - targets: ['backend-a:3000', 'backend-b:3000']
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+  - job_name: 'blackbox-health'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - http://backend-a:3000/health
+          - http://backend-a:3000/ready
+          - http://backend-b:3000/health
+          - http://backend-b:3000/ready
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox:9115

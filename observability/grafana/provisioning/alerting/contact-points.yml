@@ -1,0 +1,19 @@
+# contact-points.yml
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: slack-alertas
+    receivers:
+      - uid: slack-webhook-1
+        type: slack
+        settings:
+          url: '${SLACK_WEBHOOK_URL}'
+          title: '{{ if eq .Status "firing" }}🔴{{ else }}✅{{ end }} {{ .CommonLabels.rulename }}'
+          text: |
+            {{ range .Alerts }}
+            *Status:* {{ .Status | toUpper }}
+            *O que aconteceu:* {{ .Annotations.summary }}
+            *Severidade:* {{ .Labels.severity }}
+            *Desde:* {{ .StartsAt.Format "15:04:05" }}
+            {{ end }}

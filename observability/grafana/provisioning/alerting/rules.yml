@@ -1,0 +1,41 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: backend-critico
+    folder: Alertas
+    interval: 1m
+    rules:
+      - uid: backend-down
+        title: Backend fora do ar
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: "${PROMETHEUS_DATASOURCE_UID}"
+            model:
+              expr: up{job="ascentio-backend"}
+              instant: true
+              refId: A
+          - refId: C
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              refId: C
+              conditions:
+                - evaluator:
+                    type: lt
+                    params: [1]
+        for: 1m
+        noDataState: NoData
+        execErrState: Alerting
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backend está fora do ar há mais de 1 minuto"
