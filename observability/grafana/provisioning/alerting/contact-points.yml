@@ -8,7 +8,7 @@ contactPoints:
       - uid: slack-webhook-1
         type: slack
         settings:
-          url: '${SLACK_WEBHOOK_URL}'
+          url: '$__env{SLACK_WEBHOOK_URL}'
           title: '{{ if eq .Status "firing" }}🔴{{ else }}✅{{ end }} {{ .CommonLabels.rulename }}'
           text: |
             {{ range .Alerts }}
