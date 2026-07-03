@@ -191,4 +191,6 @@ networks:
   internal:
     driver: bridge
 
-include: ["./observability/docker-compose.yml"]
+include:
+  - path: ./observability/docker-compose.yml
+    env_file: ./observability/.env
