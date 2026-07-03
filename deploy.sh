@@ -25,6 +25,7 @@ cd "$SCRIPT_DIR"
 COMPOSE_FILE="docker-compose.yml"
 ENV_FILE=".env"
 OBSERVABILITY_ENV_FILE="observability/.env"
+SELF_ENV_FILE=".env.script"  # usado para passar variáveis de tag para o docker compose
 NGINX_CONF="nginx/conf.d/default.conf"
 
 HEALTH_TIMEOUT="${HEALTH_TIMEOUT:-60}"    # segundos, tempo total de espera pelo health check
@@ -82,10 +83,10 @@ write_env_var() {
 notify_slack() {
   local level="$1" message="$2"
   local webhook
-  webhook="$(read_env_var 'SLACK_WEBHOOK_URL' "$OBSERVABILITY_ENV_FILE")"
+  webhook="$(read_env_var 'SLACK_WEBHOOK_URL' "$SELF_ENV_FILE")"
 
   if [[ -z "$webhook" ]]; then
-    log_warn "SLACK_WEBHOOK_URL não configurado em ${OBSERVABILITY_ENV_FILE} — pulando alerta."
+    log_warn "SLACK_WEBHOOK_URL não configurado em ${SELF_ENV_FILE} — pulando alerta."
     return 0
   fi
 
