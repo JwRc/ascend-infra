@@ -54,12 +54,14 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 512M
     networks:
       - observability
+    restart: unless-stopped
   blackbox:
     image: prom/blackbox-exporter:latest
     container_name: blackbox
+    restart: unless-stopped
     ports:
       - "9115:9115"
     volumes:
