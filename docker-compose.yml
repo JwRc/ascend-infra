@@ -91,7 +91,7 @@ services:
     # loopback, para rodar ./rt-setup.sh ou abrir a UI via túnel SSH:
     #   ssh -L 8080:localhost:${REQUEST_TRACKER_PORT:-8080} <host>
     ports:
-      - "127.0.0.1:${REQUEST_TRACKER_PORT:-8080}:8080"
+      - "127.0.0.1:${REQUEST_TRACKER_PORT:-8081}:8080"
 
   backend-a:
     image: ${REGISTRY}ascend-backend:${BACKEND_IMAGE_TAG:-latest}

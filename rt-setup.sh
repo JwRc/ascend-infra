@@ -21,7 +21,7 @@ set -euo pipefail
 command -v curl >/dev/null || { echo "Este script precisa de curl instalado." >&2; exit 1; }
 command -v jq >/dev/null || { echo "Este script precisa de jq instalado." >&2; exit 1; }
 
-: "${RT_BASE_URL:=http://localhost:8080}"
+: "${RT_BASE_URL:=http://localhost:8081}"
 : "${RT_ROOT_USER:=root}"
 : "${RT_ROOT_PASSWORD:?defina RT_ROOT_PASSWORD (mesma senha configurada em RT_ROOT_PASSWORD no .env)}"
 : "${RT_QUEUE:=Support}"
