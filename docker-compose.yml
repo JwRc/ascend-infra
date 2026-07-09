@@ -60,7 +60,11 @@ services:
     # workers do rt-server (Starman prefork), que sozinho já passa de 2GB
     # de RSS somado (~240MB por worker) e estoura o limite de memória,
     # matando os workers antes deles conseguirem bindar a porta 8080.
-    command: ["/opt/rt/sbin/rt-server", "--workers", "2"]
+    # --port precisa ser explícito: sem ele, ao passar qualquer outra flag
+    # (ex: --workers), o rt-server passa a usar o $WebPort configurado (443,
+    # necessário pro fix de CSRF atrás do nginx) como porta de bind, em vez
+    # de 8080 — o que faz o healthcheck falhar (nada escuta em 8080).
+    command: ["/opt/rt/sbin/rt-server", "--port", "8080", "--workers", "2"]
     environment:
       RT_DB_TYPE: Pg
       RT_DB_HOST: postgres
