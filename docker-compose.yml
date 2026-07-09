@@ -64,9 +64,16 @@ services:
       RT_DB_PASSWORD: ${RT_DB_PASSWORD}
       RT_DB_PORT: 5432
       RT_WEB_DOMAIN: ${RT_WEB_DOMAIN:-localhost}
-      RT_WEB_PORT: "8080"
+      # $WebPort/$WebProtocol são só o que o RT usa pra se auto-referenciar
+      # (geração de URL e o check de CSRF via Referer) — não mudam a porta
+      # que o servidor escuta dentro do container (isso é fixo em 8080,
+      # independente destas variáveis). Atrás do nginx com TLS, precisam
+      # refletir a porta/protocolo PÚBLICOS (443/https), senão o RT acha que
+      # o Referer do navegador (porta 443, implícita no https) não bate com
+      # o hostname que ele mesmo espera (porta 8080) e bloqueia por CSRF.
+      RT_WEB_PORT: ${RT_WEB_PORT:-8080}
       RT_WEB_URL: ${RT_WEB_URL:-http://localhost:8080}
-      RT_WEB_PROTOCOL: http
+      RT_WEB_PROTOCOL: ${RT_WEB_PROTOCOL:-http}
       RT_WEB_HOST: ${RT_WEB_DOMAIN:-localhost}
       RT_ROOT_PASSWORD: ${RT_ROOT_PASSWORD}
     volumes:
