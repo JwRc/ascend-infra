@@ -148,6 +148,7 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       EMAIL_FROM: ${EMAIL_FROM:-no-reply@ascentio.com.br}
+      FRONTEND_URL: ${FRONTEND_URL:-https://app.ascentio.com.br}
     deploy:
       resources:
         limits:
@@ -199,6 +200,7 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       EMAIL_FROM: ${EMAIL_FROM:-no-reply@ascentio.com.br}
+      FRONTEND_URL: ${FRONTEND_URL:-https://app.ascentio.com.br}
     deploy:
       resources:
         limits:
