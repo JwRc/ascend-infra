@@ -86,6 +86,8 @@ services:
       RT_WEB_HOST: ${RT_WEB_DOMAIN:-localhost}
       RT_ROOT_PASSWORD: ${RT_ROOT_PASSWORD}
       ALLOWED_HOSTS: ${RT_WEB_DOMAIN:-localhost}
+      CSRF_TRUSTED_ORIGINS: ${RT_WEB_PROTOCOL:-http}://${RT_WEB_DOMAIN:-localhost}:${RT_WEB_PORT:-8080}
+      NETBOX_HOSTNAME: ${NETBOX_HOSTNAME:-localhost}
     volumes:
       - rt_data:/opt/rt5/var
     deploy:
