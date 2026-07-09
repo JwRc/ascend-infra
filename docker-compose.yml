@@ -56,6 +56,11 @@ services:
 
   request-tracker:
     image: netsandbox/request-tracker:6.0
+    # Sistema de suporte de baixo tráfego — não precisa do default de
+    # workers do rt-server (Starman prefork), que sozinho já passa de 2GB
+    # de RSS somado (~240MB por worker) e estoura o limite de memória,
+    # matando os workers antes deles conseguirem bindar a porta 8080.
+    command: ["/opt/rt/sbin/rt-server", "--workers", "2"]
     environment:
       RT_DB_TYPE: Pg
       RT_DB_HOST: postgres
