@@ -147,8 +147,16 @@ services:
       libredesk:
         condition: service_started
     networks:
-      - internal
-      - observability
+      internal:
+        # Alias compartilhado com backend-b — dá ao Libredesk (e a qualquer
+        # outro serviço interno) um hostname único "backend" que resolve pra
+        # qualquer uma das duas réplicas via o DNS embutido do Docker,
+        # já que não existe um serviço chamado "backend" de verdade (o nginx
+        # tem um upstream com esse nome, mas isso é interno ao nginx.conf,
+        # não vira um hostname no Docker).
+        aliases:
+          - backend
+      observability:
     restart: unless-stopped
   backend-b:
     image: ${REGISTRY}ascend-backend:${BACKEND_IMAGE_TAG:-latest}
@@ -202,8 +210,10 @@ services:
       libredesk:
         condition: service_started
     networks:
-      - internal
-      - observability
+      internal:
+        aliases:
+          - backend
+      observability:
     restart: unless-stopped
 
   frontend-web:
