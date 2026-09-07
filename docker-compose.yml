@@ -6,10 +6,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pass}
       # Lidas pelo script em ./postgres-init na primeira subida (volume vazio)
-      # para provisionar o banco/usuário do Request Tracker.
-      RT_DB_NAME: ${RT_DB_NAME:-rt_database}
-      RT_DB_USER: ${RT_DB_USER:-rt_user}
-      RT_DB_PASSWORD: ${RT_DB_PASSWORD}
+      # para provisionar o banco/usuário do Libredesk.
+      LIBREDESK_DB_NAME: ${LIBREDESK_DB_NAME:-libredesk}
+      LIBREDESK_DB_USER: ${LIBREDESK_DB_USER:-libredesk_user}
+      LIBREDESK_DB_PASSWORD: ${LIBREDESK_DB_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./postgres-init:/docker-entrypoint-initdb.d:ro
@@ -54,63 +54,46 @@ services:
       retries: 5
     restart: unless-stopped
 
-  request-tracker:
-    image: netsandbox/request-tracker:6.0
-    # Sistema de suporte de baixo tráfego — não precisa do default de
-    # workers do rt-server (Starman prefork), que sozinho já passa de 2GB
-    # de RSS somado (~240MB por worker) e estoura o limite de memória,
-    # matando os workers antes deles conseguirem bindar a porta 8080.
-    # --port precisa ser explícito: sem ele, ao passar qualquer outra flag
-    # (ex: --workers), o rt-server passa a usar o $WebPort configurado (443,
-    # necessário pro fix de CSRF atrás do nginx) como porta de bind, em vez
-    # de 8080 — o que faz o healthcheck falhar (nada escuta em 8080).
-    command: ["/opt/rt/sbin/rt-server", "--port", "8080", "--workers", "2"]
+  # Libredesk — help desk self-hosted (módulo support/ do backend).
+  # Provisionamento de agente/role/inbox/webhook: ../backend/scripts/libredesk-setup.sh
+  # (rodar via túnel SSH até LIBREDESK_PORT, depois do primeiro `up`).
+  # Bootstrap: o `command` roda `--install --idempotent-install` + `--upgrade`
+  # a cada subida, então `docker compose up -d libredesk` já basta.
+  libredesk:
+    image: libredesk/libredesk:v2.8.0
     environment:
-      RT_DB_TYPE: Pg
-      RT_DB_HOST: postgres
-      RT_DB_DATABASE: ${RT_DB_NAME:-rt_database}
-      RT_DB_USER: ${RT_DB_USER:-rt_user}
-      RT_DB_PASSWORD: ${RT_DB_PASSWORD}
-      RT_DB_PORT: 5432
-      RT_WEB_DOMAIN: ${RT_WEB_DOMAIN:-localhost}
-      # $WebPort/$WebProtocol são só o que o RT usa pra se auto-referenciar
-      # (geração de URL e o check de CSRF via Referer) — não mudam a porta
-      # que o servidor escuta dentro do container (isso é fixo em 8080,
-      # independente destas variáveis). Atrás do nginx com TLS, precisam
-      # refletir a porta/protocolo PÚBLICOS (443/https), senão o RT acha que
-      # o Referer do navegador (porta 443, implícita no https) não bate com
-      # o hostname que ele mesmo espera (porta 8080) e bloqueia por CSRF.
-      RT_WEB_PORT: ${RT_WEB_PORT:-8080}
-      RT_WEB_URL: ${RT_WEB_URL:-http://localhost:8080}
-      RT_WEB_PROTOCOL: ${RT_WEB_PROTOCOL:-http}
-      RT_WEB_HOST: ${RT_WEB_DOMAIN:-localhost}
-      RT_ROOT_PASSWORD: ${RT_ROOT_PASSWORD}
-      ALLOWED_HOSTS: ${RT_WEB_DOMAIN:-localhost}
-      CSRF_TRUSTED_ORIGINS: ${RT_WEB_PROTOCOL:-http}://${RT_WEB_DOMAIN:-localhost}:${RT_WEB_PORT:-8080}
-      NETBOX_HOSTNAME: ${NETBOX_HOSTNAME:-localhost}
+      LIBREDESK_SYSTEM_USER_PASSWORD: ${LIBREDESK_SYSTEM_USER_PASSWORD}
+      # Overrides de config.toml via env (prefixo LIBREDESK_ + `__` para
+      # chaves aninhadas) — mantém segredos fora do arquivo versionado.
+      LIBREDESK_APP__ENCRYPTION_KEY: ${LIBREDESK_ENCRYPTION_KEY}
+      LIBREDESK_DB__USER: ${LIBREDESK_DB_USER:-libredesk_user}
+      LIBREDESK_DB__PASSWORD: ${LIBREDESK_DB_PASSWORD}
+      LIBREDESK_DB__DATABASE: ${LIBREDESK_DB_NAME:-libredesk}
     volumes:
-      - rt_data:/opt/rt5/var
+      - ./libredesk/config.toml:/libredesk/config.toml:ro
+      - libredesk_uploads:/libredesk/uploads
+    command:
+      - sh
+      - -c
+      - "./libredesk --install --idempotent-install --yes --config /libredesk/config.toml && ./libredesk --upgrade --yes --config /libredesk/config.toml && ./libredesk --config /libredesk/config.toml"
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 512M
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - internal
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
     restart: unless-stopped
-    # Também roteado publicamente via rt.ascentio.com.br (nginx/conf.d), além
-    # de acessível do host via loopback, para rodar ./rt-setup.sh ou abrir a
-    # UI via túnel SSH: ssh -L 8080:localhost:${REQUEST_TRACKER_PORT:-8080} <host>
+    # Também roteado publicamente via suporte.ascentio.com.br (nginx/conf.d),
+    # além de acessível do host via loopback, para rodar
+    # ../backend/scripts/libredesk-setup.sh ou abrir a UI via túnel SSH:
+    # ssh -L 9000:localhost:${LIBREDESK_PORT:-9000} <host>
     ports:
-      - "127.0.0.1:${REQUEST_TRACKER_PORT:-8081}:8080"
+      - "127.0.0.1:${LIBREDESK_PORT:-9000}:9000"
 
   backend-a:
     image: ${REGISTRY}ascend-backend:${BACKEND_IMAGE_TAG:-latest}
@@ -138,11 +121,13 @@ services:
       STRIPE_PRICE_COACH_BASE: ${STRIPE_PRICE_COACH_BASE:-}
       STRIPE_PRICE_COACH_EXTRA: ${STRIPE_PRICE_COACH_EXTRA:-}
       STRIPE_PRICE_STANDALONE: ${STRIPE_PRICE_STANDALONE:-}
-      RT_BASE_URL: http://request-tracker:8080
-      RT_API_USER: ${RT_API_USER:-ascentio-backend}
-      RT_API_PASSWORD: ${RT_API_PASSWORD}
-      RT_QUEUE: ${RT_QUEUE:-Support}
-      RT_TENANT_CUSTOM_FIELD: ${RT_TENANT_CUSTOM_FIELD:-Tenant}
+      LIBREDESK_BASE_URL: http://libredesk:9000
+      LIBREDESK_API_KEY: ${LIBREDESK_API_KEY}
+      LIBREDESK_API_SECRET: ${LIBREDESK_API_SECRET}
+      LIBREDESK_INBOX_ID: ${LIBREDESK_INBOX_ID}
+      LIBREDESK_WEBHOOK_SECRET: ${LIBREDESK_WEBHOOK_SECRET}
+      LIBREDESK_TENANT_ATTR: ${LIBREDESK_TENANT_ATTR:-tenant}
+      LIBREDESK_FETCH_TIMEOUT_MS: ${LIBREDESK_FETCH_TIMEOUT_MS:-15000}
       SLACK_SUPPORT_WEBHOOK_URL: ${SLACK_SUPPORT_WEBHOOK_URL:-}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-}
@@ -159,8 +144,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      request-tracker:
-        condition: service_healthy
+      libredesk:
+        condition: service_started
     networks:
       - internal
       - observability
@@ -191,11 +176,13 @@ services:
       STRIPE_PRICE_COACH_BASE: ${STRIPE_PRICE_COACH_BASE:-}
       STRIPE_PRICE_COACH_EXTRA: ${STRIPE_PRICE_COACH_EXTRA:-}
       STRIPE_PRICE_STANDALONE: ${STRIPE_PRICE_STANDALONE:-}
-      RT_BASE_URL: http://request-tracker:8080
-      RT_API_USER: ${RT_API_USER:-ascentio-backend}
-      RT_API_PASSWORD: ${RT_API_PASSWORD}
-      RT_QUEUE: ${RT_QUEUE:-Support}
-      RT_TENANT_CUSTOM_FIELD: ${RT_TENANT_CUSTOM_FIELD:-Tenant}
+      LIBREDESK_BASE_URL: http://libredesk:9000
+      LIBREDESK_API_KEY: ${LIBREDESK_API_KEY}
+      LIBREDESK_API_SECRET: ${LIBREDESK_API_SECRET}
+      LIBREDESK_INBOX_ID: ${LIBREDESK_INBOX_ID}
+      LIBREDESK_WEBHOOK_SECRET: ${LIBREDESK_WEBHOOK_SECRET}
+      LIBREDESK_TENANT_ATTR: ${LIBREDESK_TENANT_ATTR:-tenant}
+      LIBREDESK_FETCH_TIMEOUT_MS: ${LIBREDESK_FETCH_TIMEOUT_MS:-15000}
       SLACK_SUPPORT_WEBHOOK_URL: ${SLACK_SUPPORT_WEBHOOK_URL:-}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-}
@@ -212,8 +199,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      request-tracker:
-        condition: service_healthy
+      libredesk:
+        condition: service_started
     networks:
       - internal
       - observability
@@ -278,7 +265,7 @@ services:
 volumes:
   pgdata:
   redis_data:
-  rt_data:
+  libredesk_uploads:
 
 networks:
   internal:
