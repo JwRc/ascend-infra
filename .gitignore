@@ -1,3 +1,9 @@
 .env
 certs-local/
 docker-compose.override.yml
+
+# Sandbox local para o teste de carga k6 (ver k6-load-test.js na raiz do
+# monorepo) — nunca deve ser commitado no repo infra.
+.env.loadtest
+docker-compose.loadtest.yml
+nginx/conf.d-loadtest/
